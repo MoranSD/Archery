@@ -98,7 +98,7 @@ namespace Gameplay.Archer
 
             archer.View.OnShoot();
 
-            var flyPath = Utils.Ballistics.Ballistics.CalculatePath(config.BallisticsConfig, archer.Bow.CheckWall);
+            var flyPath = Utils.Ballistics.Ballistics.CalculatePath(config.BallisticsConfig, archer.Bow.CheckWall);//hren' nu i ladno archer.Bow.CheckWall
             archer.Bow.Shoot(flyPath, Input.Intensity);
         }
     }
