@@ -7,34 +7,37 @@ namespace Gameplay.Archer
 {
     public class ArcherController : IInitializable, ITickable, ILateDisposable
     {
+        public bool IsAiming { get; private set; }
+        public Vector3[] AimPath { get; private set; }
+        public IArcherInput Input { get; private set; }
+
         private IArcher archer;
         private ArcherConfig config;
-        private IArcherInput input;
 
         private float shootDelayTime;
         private float reloadDelayTime;
 
         private float currentAimAngle;
-        private bool isAiming;
         private bool isReloading;
+        private bool isPreparingForShoot;
 
         public ArcherController(IArcher archer, ArcherConfig archerConfig, IArcherInput archerInput)
         {
             this.archer = archer;
-            this.input = archerInput;
+            this.Input = archerInput;
             this.config = archerConfig;
         }
 
         public void Initialize()
         {
-            input.OnBeginAim += OnBeginAim;
-            input.OnShoot += OnShoot;
+            Input.OnBeginAim += OnBeginAim;
+            Input.OnShoot += OnShoot;
         }
 
         public void LateDispose()
         {
-            input.OnBeginAim -= OnBeginAim;
-            input.OnShoot -= OnShoot;
+            Input.OnBeginAim -= OnBeginAim;
+            Input.OnShoot -= OnShoot;
         }
 
         public void Tick()
@@ -47,12 +50,27 @@ namespace Gameplay.Archer
                 isReloading = false;
             }
 
-            if (isAiming == false) return;
 
-            shootDelayTime += Time.deltaTime;
-            if (shootDelayTime < config.ShootDelay) return;
+            if (isPreparingForShoot)
+            {
+                shootDelayTime += Time.deltaTime;
+                if (shootDelayTime < config.ShootDelay) return;
+                else
+                {
+                    isPreparingForShoot = false;
+                    IsAiming = true;
+                }
+            }
 
-            currentAimAngle = Mathf.MoveTowards(currentAimAngle, input.Angle, config.AimAngleSmooth);
+            if (IsAiming == false) return;
+
+            config.BallisticsConfig.startPosition = archer.Bow.ShootPosition;//tupo no ladno
+            config.BallisticsConfig.throwDirection = Input.Direction;
+            config.BallisticsConfig.strenght = config.ArrowForce * Input.Intensity;
+
+            AimPath = Utils.Ballistics.Ballistics.CalculatePath(config.BallisticsConfig, archer.Bow.CheckWall);//ya bi mog ispolzovat' Jobs, no mne len'
+
+            currentAimAngle = Mathf.MoveTowards(currentAimAngle, Input.Angle, config.AimAngleSmooth);
 
             archer.View.SetAim(currentAimAngle);
         }
@@ -63,22 +81,25 @@ namespace Gameplay.Archer
 
             archer.View.BeginTargeting();
 
-            isAiming = true;
+            isPreparingForShoot = true;
             currentAimAngle = config.StartAimAngle;
             shootDelayTime = 0;
         }
 
         private void OnShoot()
         {
-            if (isAiming == false) return;
+            isPreparingForShoot = false;
 
-            isAiming = false;
+            if (IsAiming == false) return;
+
+            IsAiming = false;
             isReloading = true;
             reloadDelayTime = 0;
 
             archer.View.OnShoot();
 
-            archer.Bow.Shoot(input.Direction, input.Intensity * config.ArrowForce);
+            var flyPath = Utils.Ballistics.Ballistics.CalculatePath(config.BallisticsConfig, archer.Bow.CheckWall);
+            archer.Bow.Shoot(flyPath, Input.Intensity);
         }
     }
 }

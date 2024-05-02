@@ -1,4 +1,5 @@
 using UnityEngine;
+using Utils.Ballistics;
 
 namespace Gameplay.Archer.Data
 {
@@ -10,5 +11,7 @@ namespace Gameplay.Archer.Data
         [field: SerializeField] public float StartAimAngle { get; private set; }
         [field: SerializeField] public float AimAngleSmooth { get; private set; }
         [field: SerializeField] public float ArrowForce { get; private set; }
+
+        [field: SerializeField] public CalculateBallisticSettings BallisticsConfig { get; private set; }
     }
 }

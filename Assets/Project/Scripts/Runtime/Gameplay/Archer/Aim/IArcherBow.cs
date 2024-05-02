@@ -4,6 +4,8 @@ namespace Gameplay.Archer.Aim
 {
     public interface IArcherBow
     {
-        public void Shoot(Vector3 direction, float pushForce);
+        public Vector3 ShootPosition { get; }
+        public void Shoot(Vector3[] flyPath, float intensity);
+        public bool CheckWall(Vector3 position);
     }
 }
